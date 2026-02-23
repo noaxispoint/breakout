@@ -46,6 +46,33 @@ FetchContent_Declare(
 set(SFML_BUILD_AUDIO   OFF CACHE BOOL "Build SFML audio module"   FORCE)
 set(SFML_BUILD_NETWORK OFF CACHE BOOL "Build SFML network module" FORCE)
 
+# -----------------------------------------------------------------------------
+# Linux: display-backend selection
+# -----------------------------------------------------------------------------
+# SFML 2.6.x uses X11 on Linux by default.  The resulting binary runs on
+# native X11 sessions AND on Wayland desktops via XWayland – the X11
+# compatibility layer included with every major Wayland compositor (KDE
+# Plasma, GNOME, sway, Hyprland, …).  No extra flags are needed for
+# day-to-day Wayland desktop use.
+#
+# An experimental DRM/EGL backend is also available for embedded targets or
+# bare Wayland TTY sessions that have no XWayland.  It bypasses the Wayland
+# compositor protocol and writes directly to the display via KMS/DRM.
+# Enable it with:
+#   cmake -B build -DBREAKOUT_USE_DRM=ON
+if(UNIX AND NOT APPLE)
+    option(BREAKOUT_USE_DRM
+        "Build SFML with the DRM/EGL backend instead of X11 (embedded / bare Wayland TTY)"
+        OFF
+    )
+    if(BREAKOUT_USE_DRM)
+        set(SFML_USE_DRM ON CACHE BOOL "Use DRM/EGL backend in SFML" FORCE)
+        message(STATUS "Breakout: DRM/EGL backend enabled (SFML_USE_DRM=ON)")
+    else()
+        message(STATUS "Breakout: X11 backend (default). Wayland desktops use XWayland.")
+    endif()
+endif()
+
 FetchContent_MakeAvailable(SFML)
 
 # -----------------------------------------------------------------------------

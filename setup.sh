@@ -90,14 +90,90 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Linux: offer to install SFML system dependencies
+# -----------------------------------------------------------------------------
+# SFML 2.6.x builds from source but still needs X11 development headers and
+# a few other system libraries.  The prompt below is skipped on macOS.
+# -----------------------------------------------------------------------------
+if [[ "$(uname -s)" == "Linux" ]]; then
+    echo ""
+    echo "==> Linux detected – SFML needs these system libraries to build:"
+
+    # Returns 0 (true) if the user answers Y/y/Enter, 1 (false) otherwise.
+    # Handles non-interactive stdin gracefully (defaults to Y on EOF).
+    prompt_install() {
+        local desc="$1"
+        local pkgs="$2"
+        echo "    Distribution : $desc"
+        echo "    Packages     : $pkgs"
+        local reply
+        read -r -p "    Install now via sudo? [Y/n] " reply || reply="Y"
+        reply="${reply:-Y}"
+        [[ "$reply" =~ ^[Yy] ]]
+    }
+
+    if command -v apt-get &>/dev/null; then
+        APT_PKGS="cmake g++ git libx11-dev libxrandr-dev libxcursor-dev libudev-dev libfreetype-dev libgl-dev"
+        if prompt_install "Debian / Ubuntu / Mint" "$APT_PKGS"; then
+            # shellcheck disable=SC2086
+            sudo apt-get install -y $APT_PKGS
+        else
+            echo "    Skipped – install manually before running cmake."
+        fi
+
+    elif command -v dnf &>/dev/null; then
+        DNF_PKGS="cmake gcc-c++ git libX11-devel libXrandr-devel libXcursor-devel systemd-devel mesa-libGL-devel freetype-devel"
+        if prompt_install "Fedora / RHEL / CentOS Stream" "$DNF_PKGS"; then
+            # shellcheck disable=SC2086
+            sudo dnf install -y $DNF_PKGS
+        else
+            echo "    Skipped – install manually before running cmake."
+        fi
+
+    elif command -v pacman &>/dev/null; then
+        PACMAN_PKGS="cmake gcc git libx11 libxrandr libxcursor systemd-libs mesa freetype2"
+        if prompt_install "Arch / Manjaro" "$PACMAN_PKGS"; then
+            # shellcheck disable=SC2086
+            sudo pacman -S --needed $PACMAN_PKGS
+        else
+            echo "    Skipped – install manually before running cmake."
+        fi
+
+    elif command -v zypper &>/dev/null; then
+        ZYPPER_PKGS="cmake gcc-c++ git libX11-devel libXrandr-devel libXcursor-devel libudev-devel Mesa-libGL-devel freetype2-devel"
+        if prompt_install "openSUSE" "$ZYPPER_PKGS"; then
+            # shellcheck disable=SC2086
+            sudo zypper install -y $ZYPPER_PKGS
+        else
+            echo "    Skipped – install manually before running cmake."
+        fi
+
+    else
+        echo "    Package manager not recognised."
+        echo "    Install SFML build dependencies manually – see README.md for"
+        echo "    the package names for your distribution."
+    fi
+fi
+
+# -----------------------------------------------------------------------------
 # Done
 # -----------------------------------------------------------------------------
 echo ""
 echo "==> Setup complete!  SFML will be fetched automatically during the build."
 echo ""
-echo "    Build commands:"
-echo "      cmake -B build -DCMAKE_BUILD_TYPE=Release"
-echo "      cmake --build build -j\$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)"
+if [[ "$(uname -s)" == "Linux" ]]; then
+    echo "    Build commands (Linux):"
+    echo "      cmake -B build -DCMAKE_BUILD_TYPE=Release"
+    echo "      cmake --build build -j\$(nproc)"
+    echo ""
+    echo "    Wayland note: the binary uses SFML's X11 backend and runs via"
+    echo "    XWayland on all major Wayland desktops – no extra flags needed."
+    echo "    For embedded/bare-TTY Wayland use: add -DBREAKOUT_USE_DRM=ON"
+else
+    echo "    Build commands:"
+    echo "      cmake -B build -DCMAKE_BUILD_TYPE=Release"
+    echo "      cmake --build build -j\$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)"
+fi
 echo ""
 echo "    Run:"
 echo "      ./build/Breakout"

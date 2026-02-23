@@ -37,7 +37,93 @@ Multi-hit bricks (higher levels) scale point values with hit-point count.
 | `→` / `D`        | Move paddle right              |
 | `Space`          | Launch ball / Start / Restart  |
 | `P`              | Pause / Resume                 |
-| `Esc`            | Quit                           |
+| `H`              | Show / hide controls screen    |
+| `Esc`            | Close controls screen / Quit   |
+
+---
+
+## Building on Linux
+
+### Prerequisites
+
+SFML 2.6.1 compiles from source during the first build and requires X11
+development headers plus a few other system libraries.  Install them with your
+distribution's package manager, or run `./setup.sh` which will offer to do this
+automatically.
+
+**Ubuntu / Debian / Mint**
+```bash
+sudo apt-get install cmake g++ git \
+    libx11-dev libxrandr-dev libxcursor-dev \
+    libudev-dev libfreetype-dev libgl-dev
+```
+
+**Fedora / RHEL / CentOS Stream**
+```bash
+sudo dnf install cmake gcc-c++ git \
+    libX11-devel libXrandr-devel libXcursor-devel \
+    systemd-devel mesa-libGL-devel freetype-devel
+```
+
+**Arch / Manjaro**
+```bash
+sudo pacman -S cmake gcc git \
+    libx11 libxrandr libxcursor \
+    systemd-libs mesa freetype2
+```
+
+**openSUSE**
+```bash
+sudo zypper install cmake gcc-c++ git \
+    libX11-devel libXrandr-devel libXcursor-devel \
+    libudev-devel Mesa-libGL-devel freetype2-devel
+```
+
+### X11 and Wayland
+
+SFML 2.6.x uses the **X11** backend by default.  The binary runs without
+modification on:
+
+- **Native X11** sessions.
+- **Wayland** desktops (KDE Plasma, GNOME, sway, Hyprland, …) via
+  **XWayland** — the X11 compatibility layer present in every major Wayland
+  compositor.  No extra flags are needed.
+
+> **Embedded / bare Wayland TTY (no XWayland):**  SFML 2.6.x ships an
+> experimental DRM/EGL backend that writes directly to the framebuffer via
+> KMS/DRM, bypassing the compositor entirely.  Enable it with
+> `-DBREAKOUT_USE_DRM=ON` (see step 2 below).
+
+### 1 – Run the setup script
+
+```bash
+chmod +x setup.sh && ./setup.sh
+```
+
+The script detects Linux and offers to install the required packages
+automatically.  It also downloads `DejaVuSans.ttf` into `assets/`.
+
+### 2 – Configure and build
+
+Standard X11 / XWayland build:
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+```
+
+DRM/EGL build (embedded targets / bare Wayland TTY only):
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DBREAKOUT_USE_DRM=ON
+cmake --build build -j$(nproc)
+```
+
+### 3 – Run
+
+```bash
+./build/Breakout
+```
 
 ---
 
